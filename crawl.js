@@ -316,7 +316,6 @@ function extractJsonArray(raw) {
       bestFenceContent = inner;
       break; // prefer the first JSON-looking fence
     }
-    if (!bestFenceContent) bestFenceContent = inner;
   }
 
   const candidate = bestFenceContent || trimmed;
@@ -326,18 +325,24 @@ function extractJsonArray(raw) {
   const arrayEnd = candidate.lastIndexOf(']');
   if (arrayStart !== -1 && arrayEnd > arrayStart) {
     const slice = candidate.slice(arrayStart, arrayEnd + 1);
+
+    // We try to repair common issues (e.g. duplicate key overwrite issues, bad escapes, object separator transitions)
+    // before the first parse to ensure we don't silently lose data.
+    let fixed = slice;
     try {
-      const parsed = JSON.parse(slice);
+      fixed = tryRepairJsonArrayString(slice);
+      fixed = fixed.replace(/,\s*([\]}])/g, '$1');       // trailing commas
+    } catch {
+      // ignore repair failure, fall back to slice
+    }
+
+    try {
+      const parsed = JSON.parse(fixed);
       if (Array.isArray(parsed)) return parsed;
     } catch {
-      // Strategy 3: Try to fix common issues — trailing commas, single quotes
+      // If the repaired version fails, try parsing raw slice as fallback
       try {
-        const fixed = slice
-          .replace(/,\s*([\]}])/g, '$1')       // trailing commas
-          .replace(/'/g, '"')                   // single -> double quotes (risky but worth a shot)
-          .replace(/\n/g, '\\n')               // unescaped newlines inside strings
-          ;
-        const parsed = JSON.parse(fixed);
+        const parsed = JSON.parse(slice);
         if (Array.isArray(parsed)) return parsed;
       } catch {
         // fall through
@@ -358,7 +363,12 @@ function extractJsonArray(raw) {
   // Strategy 5: Truncation repair — model output was cut off mid-JSON
   // Find the start of the array and try to salvage complete objects.
   if (arrayStart !== -1) {
-    const truncated = candidate.slice(arrayStart);
+    let truncated = candidate.slice(arrayStart);
+    try {
+      truncated = tryRepairJsonArrayString(truncated);
+    } catch {
+      // ignore repair failure, fall back to parsing raw truncated
+    }
     const repaired = repairTruncatedJsonArray(truncated);
     if (repaired) return repaired;
   }
@@ -396,7 +406,8 @@ function repairTruncatedJsonArray(truncated) {
       if (depth === 0 && objStart !== -1) {
         const objStr = truncated.slice(objStart, i + 1);
         try {
-          const obj = JSON.parse(objStr);
+          const cleanedObjStr = objStr.replace(/,\s*([\]}])/g, '$1');
+          const obj = JSON.parse(cleanedObjStr);
           if (obj && typeof obj === 'object') objects.push(obj);
         } catch {
           // malformed object, skip
@@ -407,6 +418,71 @@ function repairTruncatedJsonArray(truncated) {
   }
 
   return objects.length > 0 ? objects : null;
+}
+
+/**
+ * Scan a JSON string to escape raw newlines (\n) that appear inside string values.
+ * Structural newlines outside string values are left intact.
+ */
+function escapeNewlinesInStrings(str) {
+  let result = '';
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+
+    if (escape) {
+      result += ch;
+      escape = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      result += ch;
+      escape = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (ch === '\n') {
+      if (inString) {
+        result += '\\n';
+      } else {
+        result += ch;
+      }
+      continue;
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
+/**
+ * Attempt to repair common formatting errors in JSON arrays from models.
+ * Handles invalid escapes (\', \`), unescaped newlines in strings, and malformed object boundaries.
+ */
+function tryRepairJsonArrayString(slice) {
+  // 1. Remove invalid escapes like \' or \` that models generate
+  let fixed = slice
+    .replace(/\\'/g, "'")
+    .replace(/\\`/g, "`");
+
+  // 2. Escape raw newlines inside JSON string values
+  fixed = escapeNewlinesInStrings(fixed);
+
+  // 3. Fix missing/extra braces or commas between objects.
+  // Transition from "output" string ending to the next "instruction" key name.
+  fixed = fixed.replace(/("output"\s*:\s*"(?:[^"\\]|\\.)*")\s*[^"]*?\s*"instruction"\s*:\s*/g, '$1},{"instruction":');
+
+  return fixed;
 }
 
 function saveFailedRawOutput(url, attempt, rawContent, ctx) {
