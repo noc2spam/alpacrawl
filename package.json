@@ -1,0 +1,18 @@
+{
+  "name": "crawl-alpaca",
+  "version": "2.0.0",
+  "description": "Crawl a site with a real browser, extract content via CSS selector, generate Alpaca-format Q&A training data using a local LM Studio model.",
+  "type": "commonjs",
+  "main": "crawl.js",
+  "bin": {
+    "crawl-alpaca": "./crawl.js"
+  },
+  "scripts": {
+    "start": "node crawl.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.0",
+    "puppeteer": "^25.3.0",
+    "yargs": "^18.0.0"
+  }
+}
