@@ -1,6 +1,6 @@
 # AlpaCrawl
 
-AlpaCrawl crawls a site and its inner pages using [Puppeteer](https://github.com/puppeteer/puppeteer), extracts content via CSS selector, sends it to a local [LM Studio](https://lmstudio.ai/) model to generate question–answer pairs, and saves the results as [Alpaca-format](https://github.com/tatsu-lab/stanford_alpaca) JSON training data.
+AlpaCrawl crawls a site and its inner pages using [Puppeteer](https://github.com/puppeteer/puppeteer), extracts content via CSS selector, sends it to a openAI compatible API to generate question-answer pairs, and saves the results as [Alpaca-format](https://github.com/tatsu-lab/stanford_alpaca) JSON training data.
 
 ## Requirements
 
