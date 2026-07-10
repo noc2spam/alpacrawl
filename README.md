@@ -103,6 +103,8 @@ node crawl.js --merge-only --out my-custom-output
 | `--dry-run` | `false` | Crawl and log URLs without writing files or calling the AI model |
 | `--merge-only` | `false` | Skip crawling and only merge the existing JSON files in the output directory |
 | `--verbose` | `false` | Print the reason for every skipped/failed URL |
+| `--save-failed` |  | Save raw model output for failed AI requests to <out>/failed/ (use --no-save-failed to disable) |
+
 
 ## How it works
 
