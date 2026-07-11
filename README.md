@@ -5,7 +5,7 @@ AlpaCrawl crawls a site and its inner pages using [Puppeteer](https://github.com
 ## Requirements
 
 - Node.js
-- An OpenAI-compatible API (such as [LM Studio](https://lmstudio.ai/) running locally, Ollama, DeepSeek, OpenAI, Groq, Together, etc.)
+- An OpenAI-compatible API (such as LM Studio, Ollama, DeepSeek, OpenAI, Groq, Together, etc.)
 - Dependencies installed: `npm install`
 
 ## Setup
