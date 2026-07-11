@@ -54,6 +54,7 @@ const argv = yargs(hideBin(process.argv))
   .option('max-pages', { type: 'number', default: 2000, describe: 'Safety cap on total pages visited' })
   .option('dry-run', { type: 'boolean', default: false, describe: 'Crawl and log URLs without writing files or calling AI' })
   .option('skip-existing', { type: 'boolean', default: false, describe: 'Skip a URL if its output file already exists in the output directory' })
+  .option('retries', { alias: 'r', type: 'number', default: 3, describe: 'Number of retries for AI model calls per page' })
   .option('save-failed', { type: 'boolean', default: true, describe: 'Save raw model output for failed AI requests to <out>/failed/ (use --no-save-failed to disable)' })
   .option('merge-only', { type: 'boolean', default: false, describe: 'Skip crawling and only merge the existing JSON files in the output directory' })
   .option('verbose', { type: 'boolean', default: false })
@@ -572,7 +573,7 @@ async function generateQAPairs(extracted, url, ctx) {
 
   const userMessage = formatContentForModel(extracted, url);
 
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = argv.retries || 3;
   let lastRawContent = null; // keep track for retry nudge
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {

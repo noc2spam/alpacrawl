@@ -103,6 +103,7 @@ node crawl.js --merge-only --out my-custom-output
 | `--dry-run` | `false` | Crawl and log URLs without writing files or calling the AI model |
 | `--merge-only` | `false` | Skip crawling and only merge the existing JSON files in the output directory |
 | `--verbose` | `false` | Print the reason for every skipped/failed URL |
+| `--retries`, `-r` | `3` | Number of retries for AI model calls per page |
 | `--save-failed` |  | Save raw model output for failed AI requests to <out>/failed/ (use --no-save-failed to disable) |
 
 
@@ -117,7 +118,7 @@ node crawl.js --merge-only --out my-custom-output
 
 Pages where the selector isn't found are skipped (but their links are still followed, since the page may lead to pages that do have it).
 
-If the AI model fails to generate valid Q&A pairs for a page (after 3 retries), that page is logged as failed and the crawl continues.
+If the AI model fails to generate valid Q&A pairs for a page (after `--retries`), that page is logged as failed and the crawl continues.
 
 ## Output format
 
